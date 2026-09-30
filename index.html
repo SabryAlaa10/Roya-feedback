@@ -44,8 +44,9 @@ input[type=radio]{position:absolute;opacity:0;inset:0;width:100%;height:100%;mar
 .pills span{display:block;padding:.45rem 1.05rem;border:2px solid var(--line);border-radius:999px;font-weight:700;color:#3b4d6b;transition:.15s;background:#fff}
 .pills input:checked+span{background:var(--navy);border-color:var(--navy);color:#fff}
 .pills input:focus-visible+span,.stars input:focus-visible+span{outline:3px solid var(--gold);outline-offset:2px}
-textarea{width:100%;min-height:92px;padding:.7rem .9rem;border:2px solid var(--line);border-radius:14px;font:500 1rem Cairo,Tahoma,sans-serif;resize:vertical;color:inherit}
-textarea:focus{outline:none;border-color:var(--navy2)}
+textarea,input.tx{width:100%;min-height:92px;padding:.7rem .9rem;border:2px solid var(--line);border-radius:14px;font:500 1rem Cairo,Tahoma,sans-serif;resize:vertical;color:inherit}
+textarea:focus,input.tx:focus{outline:none;border-color:var(--navy2)}
+input.tx{min-height:0;resize:none}
 button.go{width:100%;font:900 1.15rem Cairo,Tahoma,sans-serif;color:var(--navy);background:var(--gold);border:0;border-radius:16px;padding:.9rem;cursor:pointer;box-shadow:0 6px 0 #c48f00;transition:transform .1s,box-shadow .1s}
 button.go:active{transform:translateY(4px);box-shadow:0 2px 0 #c48f00}
 button.go:disabled{opacity:.6;cursor:wait}
@@ -70,10 +71,13 @@ button.go:disabled{opacity:.6;cursor:wait}
 </header>
 
 <main>
-<div class="card msg" id="noTok" hidden><div class="ic">⚠️</div><h2>الرابط غير صالح</h2><p>افتح الاستبيان من الرابط المرسل لك في رسالة التسجيل.</p></div>
 <div class="card msg" id="done" hidden><div class="ic">🎉</div><h2>شكرًا لك!</h2><p>تم تسجيل رأيك بنجاح، ونتمنى نشوفك في الفعالية الجاية مع أسرة رؤية.</p></div>
 
 <form id="fm" novalidate>
+  <div class="card" data-reqtext="full_name"><label class="q" for="full_name">الاسم <i>*</i></label><input class="tx" id="full_name" name="full_name" type="text" maxlength="120" autocomplete="name"><p class="err">من فضلك اكتب اسمك</p></div>
+  <div class="card" data-req="academic_year"><span class="q">الفرقة الدراسية <i>*</i></span>
+    <div class="pills" data-name="academic_year" data-opts="year_1:الفرقة الأولى|year_2:الفرقة الثانية|year_3:الفرقة الثالثة|year_4:الفرقة الرابعة"></div><p class="err">من فضلك اختر فرقتك</p></div>
+
   <div class="card" data-req="overall_rating"><span class="q">تقييمك العام للفعالية <i>*</i></span><div class="stars" data-name="overall_rating"></div><p class="err">من فضلك اختر تقييمًا</p></div>
   <div class="card" data-req="organization_rating"><span class="q">تقييم التنظيم <i>*</i></span><div class="stars" data-name="organization_rating"></div><p class="err">من فضلك اختر تقييمًا</p></div>
   <div class="card" data-req="content_rating"><span class="q">تقييم المحتوى والفقرات <i>*</i></span><div class="stars" data-name="content_rating"></div><p class="err">من فضلك اختر تقييمًا</p></div>
@@ -105,7 +109,6 @@ var WEBHOOK_URL='https://salehamohamed.app.n8n.cloud/webhook/roya-event-feedback
 (function(){
 var token=new URLSearchParams(location.search).get('token');
 var fm=document.getElementById('fm');
-if(!token){fm.hidden=true;document.getElementById('noTok').hidden=false}
 
 // logo 3D thickness + back face
 document.querySelectorAll('.b').forEach(function(b){
@@ -134,12 +137,16 @@ document.querySelectorAll('.pills').forEach(function(g){
     g.appendChild(l);
   });
 });
-fm.addEventListener('change',function(e){var c=e.target.closest('.card');if(c)c.classList.remove('bad')});
+['change','input'].forEach(function(t){fm.addEventListener(t,function(e){var c=e.target.closest('.card');if(c)c.classList.remove('bad')})});
 
 fm.addEventListener('submit',function(e){
   e.preventDefault();
   var err=document.getElementById('fmErr');err.hidden=true;
-  var data={qr_token:token},first=null;
+  var data={qr_token:token||null},first=null;
+  document.querySelectorAll('[data-reqtext]').forEach(function(c){
+    var n=c.dataset.reqtext,v=fm.elements[n].value.trim();
+    if(!v){c.classList.add('bad');if(!first)first=c}else data[n]=v;
+  });
   document.querySelectorAll('[data-req]').forEach(function(c){
     var n=c.dataset.req,ch=fm.querySelector('input[name="'+n+'"]:checked');
     if(!ch){c.classList.add('bad');if(!first)first=c}else data[n]=/rating/.test(n)?+ch.value:ch.value;
